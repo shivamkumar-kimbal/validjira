@@ -1,29 +1,63 @@
 name: Validate Jira Tickets
 
-on: [push]
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
 
 jobs:
   validate-jira-tickets:
     runs-on: ubuntu-latest
-    
+    permissions:
+      pull-requests: write
+      contents: read
+      checks: write  # Added permission for creating check runs
+
     steps:
     - uses: actions/checkout@v2
       with:
         fetch-depth: 0  # Fetch all history for all commits
-        
+
     - name: Set up Python
       uses: actions/setup-python@v2
       with:
         python-version: '3.x'
-        
+
     - name: Install dependencies
       run: |
         python -m pip install --upgrade pip
         pip install requests
-        
+
     - name: Validate Jira tickets in commit messages
+      id: validation
       env:
         JIRA_BASE_URL: ${{ secrets.JIRA_BASE_URL }}
         JIRA_USERNAME: ${{ secrets.JIRA_USERNAME }}
         JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
       run: python .github/scripts/validate_jira.py
+      continue-on-error: true
+
+    - name: Update PR Status
+      if: always()
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const validation_exit_code = process.env.VALIDATION_EXIT_CODE;
+          const conclusion = validation_exit_code === '0' ? 'success' : 'failure';
+          const title = validation_exit_code === '0' 
+            ? '✅ Valid Jira Tickets'
+            : '❌ Invalid or Missing Jira Tickets';
+
+          await github.rest.checks.create({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            name: 'Jira Ticket Validation',
+            head_sha: context.payload.pull_request.head.sha,
+            status: 'completed',
+            conclusion: conclusion,
+            output: {
+              title: title,
+              summary: 'Check commit messages for valid Jira ticket references'
+            }
+          });
+      env:
+        VALIDATION_EXIT_CODE: ${{ steps.validation.outcome == 'success' && '0' || '1' }}
