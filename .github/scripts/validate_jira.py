@@ -9,10 +9,10 @@ from typing import List, Tuple, Optional
 class JiraTicketValidator:
     def __init__(self):
         # Using dummy values for testing
-        self.jira_base_url = os.environ.get('JIRA_BASE_URL', 'https://dummy-jira.atlassian.net')
-        self.jira_username = os.environ.get('JIRA_USERNAME', 'dummy@example.com')
-        self.jira_api_token = os.environ.get('JIRA_API_TOKEN', 'dummy-token')
-        self.test_mode = os.environ.get('TEST_MODE', 'true').lower() == 'true'
+        # self.jira_base_url = os.environ.get('JIRA_BASE_URL', 'https://dummy-jira.atlassian.net')
+        # self.jira_username = os.environ.get('JIRA_USERNAME', 'dummy@example.com')
+        # self.jira_api_token = os.environ.get('JIRA_API_TOKEN', 'dummy-token')
+        # self.test_mode = os.environ.get('TEST_MODE', 'true').lower() == 'true'
 
         # Basic auth header for Jira API
         auth_str = f"{self.jira_username}:{self.jira_api_token}"
