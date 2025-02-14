@@ -24,8 +24,9 @@ class JiraTicketValidator:
             # In test mode, only check the last 3 commits
             git_command = ['git', 'log', '-n', '3', '--format=%H%n%s%n%b']
         else:
-            # In production, use GitHub's environment variables
-            git_command = ['git', 'log', 'origin/main..HEAD', '--format=%H%n%s%n%b']
+            # In PR context, check commits in the PR
+            base_ref = os.environ.get('GITHUB_BASE_REF', 'main')
+            git_command = ['git', 'log', f'origin/{base_ref}..HEAD', '--format=%H%n%s%n%b']
 
         result = subprocess.run(
             git_command,
@@ -45,7 +46,6 @@ class JiraTicketValidator:
 
     def extract_jira_ticket(self, message: str) -> Optional[str]:
         """Extract Jira ticket from commit message using regex."""
-        # Matches patterns like PROJECT-123, PROJ-456, etc.
         pattern = r'([A-Z]+-\d+)'
         match = re.search(pattern, message)
         return match.group(1) if match else None
