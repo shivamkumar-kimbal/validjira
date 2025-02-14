@@ -10,15 +10,16 @@ jobs:
     permissions:
       pull-requests: write
       contents: read
-      checks: write  # Added permission for creating check runs
+      checks: write
 
     steps:
-    - uses: actions/checkout@v2
+    - name: Checkout code
+      uses: actions/checkout@v3
       with:
-        fetch-depth: 0  # Fetch all history for all commits
+        fetch-depth: 0
 
     - name: Set up Python
-      uses: actions/setup-python@v2
+      uses: actions/setup-python@v3
       with:
         python-version: '3.x'
 
@@ -36,14 +37,16 @@ jobs:
       run: python .github/scripts/validate_jira.py
       continue-on-error: true
 
+    - name: Capture Exit Code
+      run: echo "VALIDATION_EXIT_CODE=$?" >> $GITHUB_ENV
+
     - name: Update PR Status
       if: always()
       uses: actions/github-script@v6
       with:
         script: |
-          const validation_exit_code = process.env.VALIDATION_EXIT_CODE;
-          const conclusion = validation_exit_code === '0' ? 'success' : 'failure';
-          const title = validation_exit_code === '0' 
+          const conclusion = process.env.VALIDATION_EXIT_CODE === '0' ? 'success' : 'failure';
+          const title = process.env.VALIDATION_EXIT_CODE === '0' 
             ? '✅ Valid Jira Tickets'
             : '❌ Invalid or Missing Jira Tickets';
 
@@ -59,5 +62,3 @@ jobs:
               summary: 'Check commit messages for valid Jira ticket references'
             }
           });
-      env:
-        VALIDATION_EXIT_CODE: ${{ steps.validation.outcome == 'success' && '0' || '1' }}
